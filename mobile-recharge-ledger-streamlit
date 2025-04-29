@@ -1,0 +1,47 @@
+import streamlit as st
+import pandas as pd
+import os
+from datetime import datetime
+
+st.set_page_config(page_title="Mobile Recharge Ledger", layout="centered")
+
+st.title("📱 Mobile Recharge Ledger")
+
+# CSV file to store data
+LEDGER_FILE = "ledger.csv"
+
+# Load existing data or create new
+if os.path.exists(LEDGER_FILE):
+    ledger_df = pd.read_csv(LEDGER_FILE)
+else:
+    ledger_df = pd.DataFrame(columns=["Name", "Mobile Number", "Amount", "Date"])
+
+# Input form
+with st.form("recharge_form"):
+    name = st.text_input("Customer Name")
+    mobile = st.text_input("Mobile Number")
+    amount = st.number_input("Recharge Amount", min_value=1.0, step=1.0)
+    date = st.date_input("Date", value=datetime.today())
+    submitted = st.form_submit_button("Add Recharge")
+
+    if submitted:
+        if name and mobile:
+            new_record = {
+                "Name": name,
+                "Mobile Number": mobile,
+                "Amount": amount,
+                "Date": date
+            }
+            ledger_df = pd.concat([ledger_df, pd.DataFrame([new_record])], ignore_index=True)
+            ledger_df.to_csv(LEDGER_FILE, index=False)
+            st.success("Recharge added successfully!")
+        else:
+            st.error("Please enter both name and mobile number.")
+
+# Display ledger
+st.subheader("📄 Recharge History")
+st.dataframe(ledger_df.style.format({"Amount": "₹{:.2f}"}))
+
+# Total amount
+total_amount = ledger_df["Amount"].sum() if not ledger_df.empty else 0
+st.metric(label="Total Recharge Amount", value=f"₹{total_amount:.2f}")
